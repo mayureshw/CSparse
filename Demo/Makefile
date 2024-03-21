@@ -3,6 +3,8 @@ I = -I../Include
 
 CS = ../Lib/libcsparse.a
 
+newall:	lib
+
 all: lib cs_demo1 cs_demo2 cs_demo3
 	- ./cs_demo1 < ../Matrix/t1
 	- ./cs_demo2 < ../Matrix/t1
