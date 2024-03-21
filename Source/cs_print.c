@@ -19,7 +19,7 @@ csi cs_print (const cs *A, csi brief)
                 (double) (Ap [j]), (double) (Ap [j+1]-1)) ;
             for (p = Ap [j] ; p < Ap [j+1] ; p++)
             {
-                printf ("      %g : %g\n", (double) (Ai [p]), Ax ? Ax [p] : 1) ;
+                printf ("      %g : %g\n", (double) (Ai [p]), Ax ? Ax [p] : 99999999999999) ;
                 if (brief && p > 20) { printf ("  ...\n") ; return (1) ; }
             }
         }
