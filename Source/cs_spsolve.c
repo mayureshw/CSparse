@@ -4,7 +4,7 @@
 csi cs_spsolve (cs *G, const cs *B, csi k, csi *xi, double *x, const csi *pinv,
     csi lo)
 {
-    printf("cs_spsolve_entry\n");
+    //printf("cs_spsolve_entry\n");
     csi j, J, p, q, px, top, n, *Gp, *Gi, *Bp, *Bi ;
     double *Gx, *Bx ;
     if (!CS_CSC (G) || !CS_CSC (B) || !xi || !x) return (-1) ;
@@ -19,19 +19,19 @@ csi cs_spsolve (cs *G, const cs *B, csi k, csi *xi, double *x, const csi *pinv,
         j = xi [px] ;                               /* x(j) is nonzero */
         J = pinv ? (pinv [j]) : j ;                 /* j maps to col J of G */
         if (J < 0) continue ;                       /* column J is empty */
-        x [j] /= Gx [lo ? (Gp [J]) : (Gp [J+1]-1)] ;/* x(j) /= G(j,j) */
+        // x [j] /= Gx [lo ? (Gp [J]) : (Gp [J+1]-1)] ;/* x(j) /= G(j,j) */
         p = lo ? (Gp [J]+1) : (Gp [J]) ;            /* lo: L(j,j) 1st entry */
         q = lo ? (Gp [J+1]) : (Gp [J+1]-1) ;        /* up: U(j,j) last entry */
         lxb_addParent(solver,j);
         for ( ; p < q ; p++)
         {
             lxb_addChild(solver,Gi[p],Gx[p]);
-            x [Gi [p]] -= Gx [p] * x [j] ;          /* x(i) -= G(i,j) * x(j) */
+            // x [Gi [p]] -= Gx [p] * x [j] ;          /* x(i) -= G(i,j) * x(j) */
         }
     }
     lxb_solve(solver);
     lxb_close(solver);
-    for(int i=0; i<n; i++)
-        printf("  x[%d]=%f\n",i,x[i]);
+    //for(int i=0; i<n; i++)
+    //    printf("  x[%d]=%f\n",i,x[i]);
     return (top) ;                                  /* return top of stack */
 }
