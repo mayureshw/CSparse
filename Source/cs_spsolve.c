@@ -16,13 +16,15 @@ csi cs_spsolve (cs *G, const cs *B, csi k, csi *xi, double *x, const csi *pinv,
         j = xi [px] ;                               /* x(j) is nonzero */
         J = pinv ? (pinv [j]) : j ;                 /* j maps to col J of G */
         if (J < 0) continue ;                       /* column J is empty */
-        x [j] /= Gx [lo ? (Gp [J]) : (Gp [J+1]-1)] ;/* x(j) /= G(j,j) */
+        // x [j] /= Gx [lo ? (Gp [J]) : (Gp [J+1]-1)] ;/* x(j) /= G(j,j) */
         p = lo ? (Gp [J]+1) : (Gp [J]) ;            /* lo: L(j,j) 1st entry */
         q = lo ? (Gp [J+1]) : (Gp [J+1]-1) ;        /* up: U(j,j) last entry */
-        for ( ; p < q ; p++)
-        {
-            x [Gi [p]] -= Gx [p] * x [j] ;          /* x(i) -= G(i,j) * x(j) */
-        }
+        lxbsolve( x, Gx, Gi, p, q, j );
+        // for ( ; p < q ; p++)
+        // {
+        //     x [Gi [p]] -= Gx [p] * x [j] ;          /* x(i) -= G(i,j) * x(j) */
+        //     printf("x[%d] Gx[%d]\n",Gi[p],p);
+        // }
     }
 
     return (top) ;                                  /* return top of stack */
