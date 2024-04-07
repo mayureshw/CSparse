@@ -19,7 +19,7 @@ csi cs_spsolve (cs *G, const cs *B, csi k, csi *xi, double *x, const csi *pinv,
         // x [j] /= Gx [lo ? (Gp [J]) : (Gp [J+1]-1)] ;/* x(j) /= G(j,j) */
         p = lo ? (Gp [J]+1) : (Gp [J]) ;            /* lo: L(j,j) 1st entry */
         q = lo ? (Gp [J+1]) : (Gp [J+1]-1) ;        /* up: U(j,j) last entry */
-        lxbsolve( x, Gx, Gi, p, q, j );
+        lxb_solve( x, Gx, Gi, p, q, j );
         // for ( ; p < q ; p++)
         // {
         //     x [Gi [p]] -= Gx [p] * x [j] ;          /* x(i) -= G(i,j) * x(j) */
