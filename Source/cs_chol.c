@@ -31,13 +31,16 @@ csn *cs_chol (const cs *A, const css *S)
     if (!L) return (cs_ndone (N, E, c, 0, 0)) ;
     Lp = L->p ; Li = L->i ;
     for (k = 0 ; k < n ; k++) Lp [k] = c [k] = cp [k] ;
+
+    p_buf0->l.u = n; // how many sends follow, also helps infer k
+    chol_send(p_buf0,1);
+
     for (k = 0 ; k < n ; k++)       /* compute L(k,:) for L*L' = C */
     {
         /* --- Nonzero pattern of L(k,:) ------------------------------------ */
         top = cs_ereach (C, k, parent, s, c) ;      /* find pattern of L(k,:) */
         
-        p_buf0->h.u = k; // will fill count in l later
-        p_buf = &buf[1]; // payload starts at index 2
+        p_buf = &buf[1]; // payload starts at index 1, will fill the header later
         cnt = 1;
         for (p = Cp [k] ; p < Cp [k+1] ; p++)       /* x = full(triu(C(:,k))) */
         {
@@ -50,11 +53,10 @@ csn *cs_chol (const cs *A, const css *S)
                 p_buf++;
             }
         }
-        if ( cnt > 1 )
-        {
-            p_buf0->l,i = cnt;
-            chol_send(p_buf0,cnt);
-        }
+        // even if 0, we have to send at least header to match count of n
+        p_buf0->l.u = cnt - 1; // count excluding header
+        chol_send(p_buf0,cnt);
+
         /* --- Triangular solve --------------------------------------------- */
         p_buf0->l.u = n - top; // h wasted here
         p_buf = p_buf1; // payload starts at index 1
@@ -77,12 +79,21 @@ csn *cs_chol (const cs *A, const css *S)
             p_buf++;
 
             Li [c_i] = k ;                /* store L(k,i) in column i */
+            char use_l = 1; // a toggle flag to fill l or h
             for (p = Lp [i] + 1 ; p < c_i ; p++)
             {
-                cnt++; BUFCHK(TRSOLVE);
-                p_buf->l.u = Li[p];
-                p_buf->h.u = p;
-                p_buf++;
+                if ( use_l )
+                {
+                    cnt++; BUFCHK(TRSOLVE);
+                    p_buf->l.u = Li[p];
+                    use_l = 0;
+                }
+                else
+                {
+                    p_buf->h.u = Li[p];
+                    p_buf++;
+                    use_l = 1;
+                }
             }
             c [i]++ ;
         }
