@@ -72,6 +72,7 @@ csn *cs_chol (const cs *A, const css *S)
             d -= lki * lki ;            /* d = d - L(k,i)*L(k,i) */
             printf("(('d',0),'*-',[('lki',0)]),\n");
             p = c [i]++ ;
+            printf("(('c',%d),'++trsolve',[('c',%d)]),\n",i,i);
             Li [p] = k ;                /* store L(k,i) in column i */
             Lx [p] = lki ;
             printf("(('Lx',%d),'=',[('lki',0)]),\n",p);
@@ -81,6 +82,7 @@ csn *cs_chol (const cs *A, const css *S)
         /* --- Compute L(k,k) ----------------------------------------------- */
         if (d <= 0) return (cs_ndone (N, E, c, x, 0)) ; /* not pos def */
         p = c [k]++ ;
+        printf("(('c',%d),'++posttr',[('c',%d)]),\n",k,k);
         Li [p] = k ;                /* store L(k,k) = sqrt (d) in column k */
         Lx [p] = sqrt (d) ;
         printf("(('Lx',%d),'sqrt',[('d',0)]),\n",p);
