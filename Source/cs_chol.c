@@ -58,11 +58,12 @@ csn *cs_chol (const cs *A, const css *S)
         chol_send(p_buf0,cnt);
 
         /* --- Triangular solve --------------------------------------------- */
-        p_buf0->l.u = n - top; // h wasted here
-        p_buf = p_buf1; // payload starts at index 1
-        cnt = 1;
         csi c_k;
         c_k = c [k] ;
+        p_buf0->l.u = n - top;
+        p_buf0->h.u = c_k;
+        p_buf = p_buf1; // payload starts at index 1
+        cnt = 1;
         for ( ; top < n ; top++)    /* solve L(0:k-1,0:k-1) * x = C(:,k) */
         {
             i = s [top] ;               /* s [top..n-1] is pattern of L(k,:) */
@@ -75,7 +76,6 @@ csn *cs_chol (const cs *A, const css *S)
 
             cnt++; BUFCHK(TRSOLVE);
             p_buf->l.u = Lp[i];
-            p_buf->h.u = c[k];
             p_buf++;
 
             Li [c_i] = k ;                /* store L(k,i) in column i */
