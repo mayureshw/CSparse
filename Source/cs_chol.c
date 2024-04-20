@@ -98,6 +98,7 @@ csn *cs_chol (const cs *A, const css *S)
             c [i]++ ;
         }
         chol_send(p_buf0,cnt);
+        chol_flush();
         /* --- Compute L(k,k) ----------------------------------------------- */
         Li [c_k] = k ;                /* store L(k,k) = sqrt (d) in column k */
         c[k]++;
