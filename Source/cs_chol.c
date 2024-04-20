@@ -37,10 +37,9 @@ csn *cs_chol (const cs *A, const css *S)
         /* --- Nonzero pattern of L(k,:) ------------------------------------ */
         top = cs_ereach (C, k, parent, s, c) ;      /* find pattern of L(k,:) */
         
-        p_buf0->l.i = INITDX; // fill count later
-        p_buf1->l.u = k; // h wasted here
-        p_buf = &buf[2]; // payload starts at index 2
-        cnt = 2;
+        p_buf0->h.u = k; // will fill count in l later
+        p_buf = &buf[1]; // payload starts at index 2
+        cnt = 1;
         for (p = Cp [k] ; p < Cp [k+1] ; p++)       /* x = full(triu(C(:,k))) */
         {
             int cip = Ci[p];
@@ -52,14 +51,13 @@ csn *cs_chol (const cs *A, const css *S)
                 p_buf++;
             }
         }
-        if ( cnt > 2 )
+        if ( cnt > 1 )
         {
-            p_buf0->h,i = cnt;
+            p_buf0->l,i = cnt;
             chol_send(solver,p_buf0,cnt);
         }
         /* --- Triangular solve --------------------------------------------- */
-        p_buf0->l.i = TRSOLVE;
-        p_buf0->h.u = n - top;
+        p_buf0->l.u = n - top; // h wasted here
         p_buf = p_buf1; // payload starts at index 1
         cnt = 1;
         csi c_k;
