@@ -31,7 +31,6 @@ csn *cs_chol (const cs *A, const css *S)
     if (!L) return (cs_ndone (N, E, c, 0, 0)) ;
     Lp = L->p ; Li = L->i ;
     for (k = 0 ; k < n ; k++) Lp [k] = c [k] = cp [k] ;
-    void *solver = chol_getSolver();
     for (k = 0 ; k < n ; k++)       /* compute L(k,:) for L*L' = C */
     {
         /* --- Nonzero pattern of L(k,:) ------------------------------------ */
@@ -54,7 +53,7 @@ csn *cs_chol (const cs *A, const css *S)
         if ( cnt > 1 )
         {
             p_buf0->l,i = cnt;
-            chol_send(solver,p_buf0,cnt);
+            chol_send(p_buf0,cnt);
         }
         /* --- Triangular solve --------------------------------------------- */
         p_buf0->l.u = n - top; // h wasted here
@@ -87,12 +86,12 @@ csn *cs_chol (const cs *A, const css *S)
             }
             c [i]++ ;
         }
-        chol_send(solver,p_buf0,cnt);
+        chol_send(p_buf0,cnt);
         /* --- Compute L(k,k) ----------------------------------------------- */
         Li [c_k] = k ;                /* store L(k,k) = sqrt (d) in column k */
         c[k]++;
     }
-    chol_read(solver,L->x,cp[n]);
+    chol_read(L->x,cp[n]);
     Lp [n] = cp [n] ;               /* finalize L */
     return (cs_ndone (N, E, c, 0, 1)) ; /* success: free E,s,x; return N */
 }
