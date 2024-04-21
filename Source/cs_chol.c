@@ -55,20 +55,19 @@ csn *cs_chol (const cs *A, const css *S)
         }
         // even if 0, we have to send at least header to match count of n
         p_buf0->l.u = cnt - 1; // count excluding header
-        chol_send(p_buf0,cnt);
 
         /* --- Triangular solve --------------------------------------------- */
         csi c_k;
         c_k = c [k] ;
-        p_buf0->l.u = n - top;
-        p_buf0->h.u = c_k;
-        p_buf = p_buf1; // payload starts at index 1
-        cnt = 1;
+        cnt++; BUFCHK(TRSOLVE);
+        p_buf->l.u = n - top;
+        p_buf->h.u = c_k;
+        chol_send(p_buf0,cnt);
         for ( ; top < n ; top++)    /* solve L(0:k-1,0:k-1) * x = C(:,k) */
         {
+            p_buf = p_buf0; cnt = 0;
             i = s [top] ;               /* s [top..n-1] is pattern of L(k,:) */
             int c_i = c[i];
-
 
             cnt++; BUFCHK(TRSOLVE);
             p_buf->l.u = i;
@@ -96,15 +95,14 @@ csn *cs_chol (const cs *A, const css *S)
                     use_l = 1;
                 }
             }
-            if ( ! use_l ) p_buf++;
+            chol_send(p_buf0,cnt);
             c [i]++ ;
         }
-        chol_send(p_buf0,cnt);
-        chol_flush();
         /* --- Compute L(k,k) ----------------------------------------------- */
         Li [c_k] = k ;                /* store L(k,k) = sqrt (d) in column k */
         c[k]++;
     }
+    chol_flush();
     chol_read(L->x,cp[n]);
     Lp [n] = cp [n] ;               /* finalize L */
     return (cs_ndone (N, E, c, 0, 1)) ; /* success: free E,s,x; return N */
