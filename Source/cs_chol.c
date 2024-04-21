@@ -1,10 +1,9 @@
 #include "cs.h"
 #include "cholif.h"
 
-static s_dword buf[WRBUFSZ];
-static s_dword *p_first = &buf[0];
-static s_dword *p_last = &buf[WRBUFSZ-1];
-static s_dword *p_buf = &buf[0];
+#define WRBUFSZ (1<<26)
+
+static s_dword *buf, *p_first, *p_last, *p_buf;
 
 // To be invoked after writing 1 record to *p_buf
 void bufnext()
@@ -25,9 +24,22 @@ void bufflush()
     if ( p_buf != p_first ) chol_send( p_first, p_buf - p_first );
 }
 
+void initbuf()
+{
+    buf = malloc(WRBUFSZ*sizeof(s_dword));
+    if ( !buf )
+    {
+        printf("Could not initialize buf for size %d\n",WRBUFSZ);
+        exit(1);
+    }
+    p_buf = p_first = &buf[0];
+    p_last = &buf[WRBUFSZ-1];
+}
+
 /* L = chol (A, [pinv parent cp]), pinv is optional */
 csn *cs_chol (const cs *A, const css *S)
 {
+    initbuf();
     double *Cx ;
     csi top, i, p, k, n, *Li, *Lp, *cp, *pinv, *s, *c, *parent, *Cp, *Ci ;
     cs *L, *C, *E ;
