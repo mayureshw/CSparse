@@ -1,14 +1,29 @@
 #include "cs.h"
 #include "cholif.h"
 
-static s_dword buf[CHOLBUFSZ];
-static s_dword *p_buf0 = &buf[0], *p_buf1 = &buf[1], *p_buf;
-static uint64_t cnt;
+static s_dword buf[WRBUFSZ];
+static s_dword *p_first = &buf[0];
+static s_dword *p_last = &buf[WRBUFSZ-1];
+static s_dword *p_buf = &buf[0];
 
-#define BUFCHK(CONTEXT) if ( cnt > CHOLBUFSZ ) { \
-    printf("Buffer overfolw in %s\n",#CONTEXT); \
-    exit(1); \
+// To be invoked after writing 1 record to *p_buf
+void bufnext()
+{
+    if ( p_buf == p_last )
+    {
+        chol_send( p_first, WRBUFSZ );
+        p_buf = p_first;
     }
+    else p_buf++;
+}
+
+// Expects the pointer to be at a position that is not yet written to
+// This helps decide whether flush is needed at all
+// For this, ensure to do bufnext after populating each dword
+void bufflush()
+{
+    if ( p_buf != p_first ) chol_send( p_first, p_buf - p_first );
+}
 
 /* L = chol (A, [pinv parent cp]), pinv is optional */
 csn *cs_chol (const cs *A, const css *S)
@@ -32,29 +47,37 @@ csn *cs_chol (const cs *A, const css *S)
     Lp = L->p ; Li = L->i ;
     for (k = 0 ; k < n ; k++) Lp [k] = c [k] = cp [k] ;
 
-    p_buf0->l.u = n; // how many sends follow, also helps infer k
+    p_buf->l.u = n; // how many sends follow, also helps infer k
 #ifdef CHOL_TRACE
     printf("n=%d\n",n);
     fflush(stdout);
 #endif
-    chol_send(p_buf0,1);
+    bufnext();
 
     for (k = 0 ; k < n ; k++)       /* compute L(k,:) for L*L' = C */
     {
         /* --- Nonzero pattern of L(k,:) ------------------------------------ */
         top = cs_ereach (C, k, parent, s, c) ;      /* find pattern of L(k,:) */
         
-        p_buf = &buf[1]; // payload starts at index 1, will fill the header later
-        cnt = 1;
+        // TODO: With bufnext design, can't wait to populate header later
+        // So have to walk over Cp twice to get the count first. Can be improved.
+        uint64_t initcnt = 0;
+        for (p = Cp [k] ; p < Cp [k+1] ; p++) if ( Ci[p] <=k ) initcnt++;
+#ifdef CHOL_TRACE
+        printf("initcnt=%d\n",initcnt);
+        fflush(stdout);
+#endif
+        p_buf->l.u = initcnt;
+        bufnext();
+
         for (p = Cp [k] ; p < Cp [k+1] ; p++)       /* x = full(triu(C(:,k))) */
         {
             int cip = Ci[p];
             if ( cip <= k )
             {
-                cnt++; BUFCHK(INITDX);
                 p_buf->l.u = cip;
                 p_buf->h.d = Cx[p];
-                p_buf++;
+                bufnext();
 #ifdef CHOL_TRACE
                 printf("cip=%d\n",cip);
                 printf("cxp=%.4e\n",Cx[p]);
@@ -62,38 +85,29 @@ csn *cs_chol (const cs *A, const css *S)
 #endif
             }
         }
-        // even if 0, we have to send at least header to match count of n
-        p_buf0->l.u = cnt - 1; // count excluding header
-#ifdef CHOL_TRACE
-        printf("initcnt=%d\n",cnt-1);
-        fflush(stdout);
-#endif
 
         /* --- Triangular solve --------------------------------------------- */
         csi c_k;
         c_k = c [k] ;
-        cnt++; BUFCHK(TRSOLVE);
         p_buf->l.u = n - top;
         p_buf->h.u = c_k;
+        bufnext();
 #ifdef CHOL_TRACE
         printf("n_minus_top=%d\n",n-top);
         printf("c_k=%d\n",c_k);
         fflush(stdout);
 #endif
-        chol_send(p_buf0,cnt);
         for ( ; top < n ; top++)    /* solve L(0:k-1,0:k-1) * x = C(:,k) */
         {
-            p_buf = p_buf0; cnt = 0;
             i = s [top] ;               /* s [top..n-1] is pattern of L(k,:) */
             int c_i = c[i];
 
-            cnt++; BUFCHK(TRSOLVE);
             p_buf->l.u = i;
             p_buf->h.u = c_i;
-            p_buf++;
-            cnt++; BUFCHK(TRSOLVE);
+            bufnext();
+
             p_buf->l.u = Lp[i];
-            p_buf++;
+            bufnext();
 #ifdef CHOL_TRACE
         printf("i=%d\n",i);
         printf("c_i=%d\n",c_i);
@@ -107,14 +121,13 @@ csn *cs_chol (const cs *A, const css *S)
             {
                 if ( use_l )
                 {
-                    cnt++; BUFCHK(TRSOLVE);
                     p_buf->l.u = Li[p];
                     use_l = 0;
                 }
                 else
                 {
                     p_buf->h.u = Li[p];
-                    p_buf++;
+                    bufnext();
                     use_l = 1;
                 }
 #ifdef CHOL_TRACE
@@ -122,14 +135,14 @@ csn *cs_chol (const cs *A, const css *S)
                 fflush(stdout);
 #endif
             }
-            chol_send(p_buf0,cnt);
+            if ( ! use_l ) bufnext();
             c [i]++ ;
         }
         /* --- Compute L(k,k) ----------------------------------------------- */
         Li [c_k] = k ;                /* store L(k,k) = sqrt (d) in column k */
         c[k]++;
     }
-    chol_flush();
+    bufflush();
     chol_read(L->x,cp[n]);
     Lp [n] = cp [n] ;               /* finalize L */
     return (cs_ndone (N, E, c, 0, 1)) ; /* success: free E,s,x; return N */
