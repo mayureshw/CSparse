@@ -33,6 +33,10 @@ csn *cs_chol (const cs *A, const css *S)
     for (k = 0 ; k < n ; k++) Lp [k] = c [k] = cp [k] ;
 
     p_buf0->l.u = n; // how many sends follow, also helps infer k
+#ifdef CHOL_TRACE
+    printf("n=%d\n",n);
+    fflush(stdout);
+#endif
     chol_send(p_buf0,1);
 
     for (k = 0 ; k < n ; k++)       /* compute L(k,:) for L*L' = C */
@@ -51,10 +55,19 @@ csn *cs_chol (const cs *A, const css *S)
                 p_buf->l.u = cip;
                 p_buf->h.d = Cx[p];
                 p_buf++;
+#ifdef CHOL_TRACE
+                printf("cip=%d\n",cip);
+                printf("cxp=%.4e\n",Cx[p]);
+                fflush(stdout);
+#endif
             }
         }
         // even if 0, we have to send at least header to match count of n
         p_buf0->l.u = cnt - 1; // count excluding header
+#ifdef CHOL_TRACE
+        printf("initcnt=%d\n",cnt-1);
+        fflush(stdout);
+#endif
 
         /* --- Triangular solve --------------------------------------------- */
         csi c_k;
@@ -62,6 +75,11 @@ csn *cs_chol (const cs *A, const css *S)
         cnt++; BUFCHK(TRSOLVE);
         p_buf->l.u = n - top;
         p_buf->h.u = c_k;
+#ifdef CHOL_TRACE
+        printf("n_minus_top=%d\n",n-top);
+        printf("c_k=%d\n",c_k);
+        fflush(stdout);
+#endif
         chol_send(p_buf0,cnt);
         for ( ; top < n ; top++)    /* solve L(0:k-1,0:k-1) * x = C(:,k) */
         {
@@ -73,10 +91,15 @@ csn *cs_chol (const cs *A, const css *S)
             p_buf->l.u = i;
             p_buf->h.u = c_i;
             p_buf++;
-
             cnt++; BUFCHK(TRSOLVE);
             p_buf->l.u = Lp[i];
             p_buf++;
+#ifdef CHOL_TRACE
+        printf("i=%d\n",i);
+        printf("c_i=%d\n",c_i);
+        printf("Lp_i=%d\n",Lp[i]);
+        fflush(stdout);
+#endif
 
             Li [c_i] = k ;                /* store L(k,i) in column i */
             char use_l = 1; // a toggle flag to fill l or h
@@ -94,6 +117,10 @@ csn *cs_chol (const cs *A, const css *S)
                     p_buf++;
                     use_l = 1;
                 }
+#ifdef CHOL_TRACE
+                printf("Li_p=%d\n",Li[p]);
+                fflush(stdout);
+#endif
             }
             chol_send(p_buf0,cnt);
             c [i]++ ;
