@@ -69,6 +69,7 @@ csn *cs_chol (const cs *A, const css *S)
             i = s [top] ;               /* s [top..n-1] is pattern of L(k,:) */
             int c_i = c[i];
 
+
             cnt++; BUFCHK(TRSOLVE);
             p_buf->l.u = i;
             p_buf->h.u = c_i;
@@ -95,6 +96,7 @@ csn *cs_chol (const cs *A, const css *S)
                     use_l = 1;
                 }
             }
+            if ( ! use_l ) p_buf++;
             c [i]++ ;
         }
         chol_send(p_buf0,cnt);
