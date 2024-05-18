@@ -130,10 +130,7 @@ csn *cs_chol (const cs *A, const css *S)
             Li [c_i] = k ;                /* store L(k,i) in column i */
             for (p = Lp [i] + 1 ; p < c_i ; )
             {
-                int psleft = c_i - p;
-                int pnow = psleft <= 4 ? psleft : 4;
-                int pupto = p + pnow;
-                for( ; p < pupto; p++ )
+                for( int i=0 ; p < c_i && i < 4; p++, i++ )
                 {
                     switch(i)
                     {
@@ -150,7 +147,8 @@ csn *cs_chol (const cs *A, const css *S)
                             p_buf->h.s.s1 = Li[p];
                             break;
                         default:
-                            printf("Unknown index in Li_p loop\n");
+                            printf("Unknown index in Li_p loop %d\n",i);
+                            fflush(stdout);
                             exit(1);
                     }
 #ifdef CHOL_TRACE
