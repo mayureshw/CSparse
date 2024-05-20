@@ -2,6 +2,7 @@
 #include "cholif.h"
 
 #define WRBUFSZ (1<<26)
+// #define WRBUFSZ 16
 
 static s_dword *buf, *p_first, *p_last, *p_buf;
 
@@ -39,6 +40,7 @@ void initbuf()
 /* L = chol (A, [pinv parent cp]), pinv is optional */
 csn *cs_chol (const cs *A, const css *S)
 {
+    chol_init();
     initbuf();
     double *Cx ;
     csi top, i, p, k, n, *Li, *Lp, *cp, *pinv, *s, *c, *parent, *Cp, *Ci ;
