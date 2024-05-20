@@ -130,26 +130,36 @@ csn *cs_chol (const cs *A, const css *S)
 #endif
 
             Li [c_i] = k ;                /* store L(k,i) in column i */
-            char use_l = 1; // a toggle flag to fill l or h
-            for (p = Lp [i] + 1 ; p < c_i ; p++)
+            for (p = Lp [i] + 1 ; p < c_i ; )
             {
-                if ( use_l )
+                for( int i=0 ; p < c_i && i < 4; p++, i++ )
                 {
-                    p_buf->l.u = Li[p];
-                    use_l = 0;
-                }
-                else
-                {
-                    p_buf->h.u = Li[p];
-                    bufnext();
-                    use_l = 1;
-                }
+                    switch(i)
+                    {
+                        case 0:
+                            p_buf->l.s.s0 = Li[p];
+                            break;
+                        case 1:
+                            p_buf->l.s.s1 = Li[p];
+                            break;
+                        case 2:
+                            p_buf->h.s.s0 = Li[p];
+                            break;
+                        case 3:
+                            p_buf->h.s.s1 = Li[p];
+                            break;
+                        default:
+                            printf("Unknown index in Li_p loop %d\n",i);
+                            fflush(stdout);
+                            exit(1);
+                    }
 #ifdef CHOL_TRACE
-                printf("Li_p=%d\n",Li[p]);
-                fflush(stdout);
+                    printf("Li_p=%d\n",Li[p]);
+                    fflush(stdout);
 #endif
+                }
+                bufnext();
             }
-            if ( ! use_l ) bufnext();
             c [i]++ ;
         }
         /* --- Compute L(k,k) ----------------------------------------------- */
